@@ -1,5 +1,7 @@
 package main
 
+import "sync"
+
 func bitonic(up bool, arr []int, lo int, n int) {
 	if n > 1 {
 		m := n / 2
@@ -22,17 +24,37 @@ func bitonic_merge(up bool, arr []int, lo int, n int) {
 	}
 }
 
-func bitonic_parallel(up bool, arr []int, lo int, n int, c chan int) {
+func bitonic_parallel(up bool, arr []int, lo int, n int, sem chan struct{}) {
 	if n > 1 {
-		c1 := make(chan int)
-		c2 := make(chan int)
-		go bitonic_parallel(true, arr, lo, n/2, c1)
-		go bitonic_parallel(true, arr, lo+n/2, n/2, c2)
-		<-c1
-		<-c2
-		bitonic_merge_parallel(up, arr, lo, n, c)
+		wg := sync.WaitGroup{}
+		wg.Add(2)
+		select {
+		case sem <- struct{}{}:
+			go func() {
+				bitonic_parallel(true, arr, lo, n/2, sem)
+				<-sem
+				wg.Done()
+			}()
+		default:
+			bitonic(true, arr, lo, n/2)
+			wg.Done()
+		}
+		select {
+		case sem <- struct{}{}:
+			go func() {
+				bitonic_parallel(false, arr, lo+n/2, n/2, sem)
+				<-sem
+				wg.Done()
+			}()
+		default:
+			bitonic(false, arr, lo+n/2, n/2)
+			wg.Done()
+		}
+		wg.Wait()
+
+		bitonic_merge(up, arr, lo, n)
 	}
-	c <- 1
+	//	c <- 1
 	/*
 		first := bitonic(true, arr[:len(arr)/2], pFlag)
 		second := bitonic(false, arr[len(arr)/2:], pFlag)

@@ -27,7 +27,7 @@ func compute(original []int) {
 	var ans []int = make([]int, N)
 	var t time.Time
 	var du time.Duration
-	var c chan int
+	//var c chan int
 
 	//	fmt.Printf("before sort ... :")
 	//fmt.Print(original, "\n")
@@ -60,11 +60,13 @@ func compute(original []int) {
 	//	fmt.Print("after bitonic ... :", input, "\n")
 	fmt.Print("bitonic spend ", du, " => ", verify(ans, input), "\n")
 
-	c = make(chan int)
+	//c = make(chan int)
+	sem := make(chan struct{}, 2)
 	copy(input, original)
 	t = time.Now()
-	go bitonic_parallel(true, input, 0, N, c)
-	<-c
+	bitonic_parallel(true, input, 0, N, sem)
+
+	//<-c
 	du = -t.Sub(time.Now())
 	//	fmt.Print("after (parallel) bitonic ... :", input, "\n")
 	fmt.Print("bitonic(goroutine) spend ", du, " => ", verify(ans, input), "\n")
@@ -73,7 +75,7 @@ func compute(original []int) {
 func main() {
 	var array []int
 
-	start, end, mul := 17, 18, 1
+	start, end, mul := 18, 19, 1
 	mul = int(math.Pow(2, float64(start)))
 	for i := 0; i < end-start; i++ {
 		for j := 0; j < mul; j++ {
