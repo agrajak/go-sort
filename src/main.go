@@ -61,15 +61,30 @@ func compute(original []int) {
 	fmt.Print("bitonic spend ", du, " => ", verify(ans, input), "\n")
 
 	//c = make(chan int)
-	sem := make(chan struct{}, 2)
+	sem := make(chan struct{}, 4)
 	copy(input, original)
 	t = time.Now()
-	bitonic_parallel(true, input, 0, N, sem)
+	bitonic_go(true, input, 0, N, sem)
 
 	//<-c
 	du = -t.Sub(time.Now())
 	//	fmt.Print("after (parallel) bitonic ... :", input, "\n")
 	fmt.Print("bitonic(goroutine) spend ", du, " => ", verify(ans, input), "\n")
+
+	copy(input, original)
+	t = time.Now()
+	input = oddeven_merge(input)
+	du = -t.Sub(time.Now())
+	//	fmt.Print("after (parallel) bitonic ... :", input, "\n")
+	fmt.Print("odd_even merge spend ", du, " => ", verify(ans, input), "\n")
+
+	sem = make(chan struct{}, 12)
+	copy(input, original)
+	t = time.Now()
+	input = oddeven_merge_parallel(input, sem)
+	du = -t.Sub(time.Now())
+	fmt.Print("odd_even merge(goroutine) spend ", du, " => ", verify(ans, input), "\n")
+
 }
 
 func main() {

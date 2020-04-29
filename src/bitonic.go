@@ -24,14 +24,14 @@ func bitonic_merge(up bool, arr []int, lo int, n int) {
 	}
 }
 
-func bitonic_parallel(up bool, arr []int, lo int, n int, sem chan struct{}) {
+func bitonic_go(up bool, arr []int, lo int, n int, sem chan struct{}) {
 	if n > 1 {
 		wg := sync.WaitGroup{}
 		wg.Add(2)
 		select {
 		case sem <- struct{}{}:
 			go func() {
-				bitonic_parallel(true, arr, lo, n/2, sem)
+				bitonic_go(true, arr, lo, n/2, sem)
 				<-sem
 				wg.Done()
 			}()
@@ -42,7 +42,7 @@ func bitonic_parallel(up bool, arr []int, lo int, n int, sem chan struct{}) {
 		select {
 		case sem <- struct{}{}:
 			go func() {
-				bitonic_parallel(false, arr, lo+n/2, n/2, sem)
+				bitonic_go(false, arr, lo+n/2, n/2, sem)
 				<-sem
 				wg.Done()
 			}()
@@ -54,12 +54,6 @@ func bitonic_parallel(up bool, arr []int, lo int, n int, sem chan struct{}) {
 
 		bitonic_merge(up, arr, lo, n)
 	}
-	//	c <- 1
-	/*
-		first := bitonic(true, arr[:len(arr)/2], pFlag)
-		second := bitonic(false, arr[len(arr)/2:], pFlag)
-		return bitonic_merge(up, append(first, second...), pFlag)
-	*/
 }
 
 func bitonic_merge_parallel(up bool, arr []int, lo int, n int, c chan int) {
