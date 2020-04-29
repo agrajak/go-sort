@@ -12,7 +12,7 @@ func oddeven_merge(arr []int) []int {
 
 	return merge(left, right)
 }
-func oddeven_merge_parallel(arr []int, sem chan struct{}) []int {
+func oddeven_merge_go(arr []int, sem chan struct{}) []int {
 	if len(arr) < 2 {
 		return arr
 	}
@@ -23,7 +23,7 @@ func oddeven_merge_parallel(arr []int, sem chan struct{}) []int {
 	select {
 	case sem <- struct{}{}:
 		go func() {
-			left = oddeven_merge_parallel(arr[:mid], sem)
+			left = oddeven_merge_go(arr[:mid], sem)
 			<-sem
 			wg.Done()
 		}()
@@ -34,7 +34,7 @@ func oddeven_merge_parallel(arr []int, sem chan struct{}) []int {
 	select {
 	case sem <- struct{}{}:
 		go func() {
-			right = oddeven_merge_parallel(arr[mid:], sem)
+			right = oddeven_merge_go(arr[mid:], sem)
 			<-sem
 			wg.Done()
 		}()

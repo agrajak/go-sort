@@ -81,7 +81,7 @@ func compute(original []int) {
 	sem = make(chan struct{}, 12)
 	copy(input, original)
 	t = time.Now()
-	input = oddeven_merge_parallel(input, sem)
+	input = oddeven_merge_go(input, sem)
 	du = -t.Sub(time.Now())
 	fmt.Print("odd_even merge(goroutine) spend ", du, " => ", verify(ans, input), "\n")
 
