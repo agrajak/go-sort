@@ -2,67 +2,58 @@ package main
 
 import "sync"
 
-func oddeven_merge(arr []int) []int {
-	if len(arr) < 2 {
-		return arr
+func oddeven_merge(arr []int, lo int, n int) {
+	if n > 1 {
+		m := n / 2
+		oddeven_merge(arr, lo, m)
+		oddeven_merge(arr, lo+m, m)
+		merge(arr, lo, n, 1)
 	}
-	mid := len(arr) / 2
-	left := oddeven_merge(arr[:mid])
-	right := oddeven_merge(arr[mid:])
-
-	return merge(left, right)
 }
-func oddeven_merge_go(arr []int, sem chan struct{}) []int {
-	if len(arr) < 2 {
-		return arr
-	}
-	mid := len(arr) / 2
-	wg := sync.WaitGroup{}
-	wg.Add(2)
-	var left, right []int
-	select {
-	case sem <- struct{}{}:
-		go func() {
-			left = oddeven_merge_go(arr[:mid], sem)
-			<-sem
+func oddeven_merge_go(arr []int, lo, n int, sem chan struct{}) {
+	if n > 1 {
+		m, wg := n/2, sync.WaitGroup{}
+		wg.Add(2)
+		select {
+		case sem <- struct{}{}:
+			go func() {
+				oddeven_merge_go(arr, lo, m, sem)
+				<-sem
+				wg.Done()
+			}()
+		default:
+			oddeven_merge(arr, lo, m)
 			wg.Done()
-		}()
-	default:
-		left = oddeven_merge(arr[:mid])
-		wg.Done()
-	}
-	select {
-	case sem <- struct{}{}:
-		go func() {
-			right = oddeven_merge_go(arr[mid:], sem)
-			<-sem
-			wg.Done()
-		}()
-	default:
-		right = oddeven_merge(arr[mid:])
-		wg.Done()
-	}
-	wg.Wait()
-
-	return merge(left, right)
-}
-func merge(left, right []int) []int {
-	size, i, j := len(left)+len(right), 0, 0
-	arr := make([]int, size, size)
-	for k := 0; k < size; k++ {
-		if i > len(left)-1 && j <= len(right)-1 {
-			arr[k] = right[j]
-			j++
-		} else if j > len(right)-1 && i <= len(left)-1 {
-			arr[k] = left[i]
-			i++
-		} else if left[i] < right[j] {
-			arr[k] = left[i]
-			i++
-		} else {
-			arr[k] = right[j]
-			j++
 		}
+		select {
+		case sem <- struct{}{}:
+			go func() {
+				oddeven_merge_go(arr, lo+m, m, sem)
+				<-sem
+				wg.Done()
+			}()
+		default:
+			oddeven_merge(arr, lo+m, m)
+			wg.Done()
+		}
+		wg.Wait()
+		merge(arr, lo, n, 1)
 	}
-	return arr
+}
+func merge(arr []int, lo, n, r int) {
+	m := r * 2
+	if m < n {
+		merge(arr, lo, n, m)
+		merge(arr, lo+r, n, m)
+		for i := lo + r; i+r < lo+n; i += m {
+			compare(arr, i, i+r)
+		}
+	} else {
+		compare(arr, lo, lo+r)
+	}
+}
+func compare(arr []int, a, b int) {
+	if arr[a] > arr[b] {
+		arr[a], arr[b] = arr[b], arr[a]
+	}
 }

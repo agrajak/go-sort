@@ -7,11 +7,6 @@ import (
 	"time"
 )
 
-// selection
-// median-of-three
-// shell
-// bitonic
-// odd-even merge
 func verify(a []int, b []int) bool {
 	N := len(a)
 	for i := 0; i < N; i++ {
@@ -68,20 +63,18 @@ func compute(original []int) {
 
 	//<-c
 	du = -t.Sub(time.Now())
-	//	fmt.Print("after (parallel) bitonic ... :", input, "\n")
 	fmt.Print("bitonic(goroutine) spend ", du, " => ", verify(ans, input), "\n")
 
 	copy(input, original)
 	t = time.Now()
-	input = oddeven_merge(input)
+	oddeven_merge(input, 0, N)
 	du = -t.Sub(time.Now())
-	//	fmt.Print("after (parallel) bitonic ... :", input, "\n")
 	fmt.Print("odd_even merge spend ", du, " => ", verify(ans, input), "\n")
 
-	sem = make(chan struct{}, 12)
+	sem = make(chan struct{}, 4)
 	copy(input, original)
 	t = time.Now()
-	input = oddeven_merge_go(input, sem)
+	oddeven_merge_go(input, 0, N, sem)
 	du = -t.Sub(time.Now())
 	fmt.Print("odd_even merge(goroutine) spend ", du, " => ", verify(ans, input), "\n")
 
@@ -90,7 +83,7 @@ func compute(original []int) {
 func main() {
 	var array []int
 
-	start, end, mul := 18, 19, 1
+	start, end, mul := 16, 17, 1
 	mul = int(math.Pow(2, float64(start)))
 	for i := 0; i < end-start; i++ {
 		for j := 0; j < mul; j++ {
