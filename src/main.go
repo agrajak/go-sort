@@ -1,9 +1,13 @@
 package main
 
 import (
+	"bufio"
+	"encoding/csv"
 	"fmt"
 	"math"
 	"math/rand"
+	"os"
+	"strconv"
 	"time"
 )
 
@@ -16,80 +20,73 @@ func verify(a []int, b []int) bool {
 	}
 	return true
 }
-func compute(original []int) {
-	N := len(original)
-	var input []int = make([]int, N)
-	var ans []int = make([]int, N)
+
+var sorts []string = []string{"selection", "median of three", "shell", "bitonic", "bitonic(go)", "oddeven merge", "oddeven merge(go)"}
+
+func sort(arr []int, ans []int, idx int) time.Duration {
+	N := len(arr)
+	input := make([]int, N, N)
+	copy(arr, input)
 	var t time.Time
 	var du time.Duration
-	//var c chan int
-
-	//	fmt.Printf("before sort ... :")
-	//fmt.Print(original, "\n")
-	copy(input, original)
-	t = time.Now()
-	selection(input, N)
-	du = -t.Sub(time.Now())
-	copy(ans, input)
-	//fmt.Print("after selection sort ... :", input, "\n")
-	fmt.Print("selection spend ", du, " => ", verify(ans, input), "\n")
-
-	copy(input, original)
-	t = time.Now()
-	median_of_three(input, 0, N-1)
-	du = -t.Sub(time.Now())
-	//	fmt.Print("after median-of-three quick sort ... :", input, "\n")
-	fmt.Print("median-of-three spend ", du, " => ", verify(ans, input), "\n")
-
-	copy(input, original)
-	t = time.Now()
-	shell(input, N)
-	du = -t.Sub(time.Now())
-	//	fmt.Print("after shell ... :", input, "\n")
-	fmt.Print("shell spend ", du, " => ", verify(ans, input), "\n")
-
-	copy(input, original)
-	t = time.Now()
-	bitonic(true, input, 0, N)
-	du = -t.Sub(time.Now())
-	//	fmt.Print("after bitonic ... :", input, "\n")
-	fmt.Print("bitonic spend ", du, " => ", verify(ans, input), "\n")
-
-	//c = make(chan int)
 	sem := make(chan struct{}, 4)
-	copy(input, original)
 	t = time.Now()
-	bitonic_go(true, input, 0, N, sem)
-
-	//<-c
+	switch idx {
+	case 0:
+		selection(input, N)
+	case 1:
+		median_of_three(input, 0, N-1)
+	case 2:
+		shell(input, N)
+	case 3:
+		bitonic(true, input, 0, N)
+	case 4:
+		bitonic_go(true, input, 0, N, sem)
+	case 5:
+		oddeven_merge(input, 0, N)
+	case 6:
+		oddeven_merge_go(input, 0, N, sem)
+	}
 	du = -t.Sub(time.Now())
-	fmt.Print("bitonic(goroutine) spend ", du, " => ", verify(ans, input), "\n")
-
-	copy(input, original)
-	t = time.Now()
-	oddeven_merge(input, 0, N)
-	du = -t.Sub(time.Now())
-	fmt.Print("odd_even merge spend ", du, " => ", verify(ans, input), "\n")
-
-	sem = make(chan struct{}, 4)
-	copy(input, original)
-	t = time.Now()
-	oddeven_merge_go(input, 0, N, sem)
-	du = -t.Sub(time.Now())
-	fmt.Print("odd_even merge(goroutine) spend ", du, " => ", verify(ans, input), "\n")
-
+	fmt.Println("*", sorts[idx], "sort spend", du, verify(arr, ans))
+	return du
+}
+func benchmark(arr []int) []time.Duration {
+	N := len(arr)
+	result := make([]time.Duration, len(sorts))
+	ans := make([]int, N, N)
+	selection(ans, N)
+	for i := 0; i < len(sorts); i++ {
+		result[i] = sort(arr, ans, i)
+	}
+	return result
 }
 
 func main() {
-	var array []int
+	var arr []int
 
-	start, end, mul := 16, 17, 1
+	file, err := os.Create("./result.csv")
+	if err != nil {
+		panic(nil)
+	}
+	wr := csv.NewWriter(bufio.NewWriter(file))
+	start, end, mul := 1, 22, 1
 	mul = int(math.Pow(2, float64(start)))
-	for i := 0; i < end-start; i++ {
-		for j := 0; j < mul; j++ {
-			array = append(array, int(rand.Int31()))
+	for i := 0; i < mul; i++ {
+		arr = append(arr, int(rand.Int31()))
+	}
+	for round := start; round < end; round++ {
+		fmt.Println(" *** for N =", mul, "***")
+		paper := make([]string, len(sorts)+1)
+		paper[0] = strconv.Itoa(round)
+		for i, r := range benchmark(arr) {
+			paper[i+1] = fmt.Sprintf("%f", float64(r/time.Microsecond))
 		}
-		compute(array)
+		wr.Write(paper)
+		wr.Flush()
+		for i := 0; i < mul; i++ {
+			arr = append(arr, int(rand.Int31()))
+		}
 		mul *= 2
 	}
 
