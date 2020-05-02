@@ -1,1 +1,6 @@
 bin
+.csv
+.out
+.prof
+.test
+.svg
