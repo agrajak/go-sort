@@ -1,6 +1,8 @@
 package main
 
-import "sync"
+import (
+	"sync"
+)
 
 func oddeven_merge(arr []int, lo int, n int) {
 	if n > 1 {
@@ -16,22 +18,32 @@ func oddeven_merge_go(arr []int, lo, n int, sem chan struct{}) {
 		wg.Add(2)
 		select {
 		case sem <- struct{}{}:
-			go func() {
-				oddeven_merge_go(arr, lo, m, sem)
-				<-sem
+			if n >= 4096 {
+				go func() {
+					oddeven_merge_go(arr, lo, m, sem)
+					<-sem
+					wg.Done()
+				}()
+			} else {
+				oddeven_merge(arr, lo, m)
 				wg.Done()
-			}()
+			}
 		default:
 			oddeven_merge(arr, lo, m)
 			wg.Done()
 		}
 		select {
 		case sem <- struct{}{}:
-			go func() {
-				oddeven_merge_go(arr, lo+m, m, sem)
-				<-sem
+			if n >= 4096 {
+				go func() {
+					oddeven_merge_go(arr, lo+m, m, sem)
+					<-sem
+					wg.Done()
+				}()
+			} else {
+				oddeven_merge(arr, lo+m, m)
 				wg.Done()
-			}()
+			}
 		default:
 			oddeven_merge(arr, lo+m, m)
 			wg.Done()

@@ -1,6 +1,8 @@
 package main
 
-import "sync"
+import (
+	"sync"
+)
 
 func bitonic(up bool, arr []int, lo int, n int) {
 	if n > 1 {
