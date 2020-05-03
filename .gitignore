@@ -1,6 +1,6 @@
 bin
-.csv
-.out
-.prof
-.test
-.svg
+*.csv
+*.out
+*.prof
+*.test
+*.svg
